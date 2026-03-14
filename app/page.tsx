@@ -16,7 +16,7 @@ import {
   renameProfile,
   deleteProfile,
   buildInitialProfileState,
-} from "../lib/profiles";
+} from "@/lib/profiles";
 
 import { tt, TKey } from "@/lib/i18n";
 import type { ProfileLang } from "@/lib/profiles";

@@ -7,6 +7,7 @@ export type FamilyDef = {
   emoji?: string;     // simple (ex: 🍌)
   imageUrl?: string;
   color: string;
+  
 };
 
 export const FAMILIES: FamilyDef[] = [
