@@ -20,7 +20,7 @@ import {
 
 import { tt, TKey } from "@/lib/i18n";
 import type { ProfileLang } from "@/lib/profiles";
-
+import { supabase } from "@/lib/supabase";
 
 /* ---------------- Helpers ---------------- */
 
@@ -89,6 +89,23 @@ function pickRandomId(ids: string[], avoid?: string | null): string | null {
 /* ---------------- Page ---------------- */
 
 export default function Page() {
+
+  //Test 15 mars
+  useEffect(() => {
+    async function testSupabase() {
+      const { data, error } = await supabase.from("profiles").select("*");
+      console.log("SUPABASE TEST", data, error);
+    }
+
+    testSupabase();
+  }, []);
+  // Fin test
+
+  // New 15 mars authentication
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  // End new
+
   const [levelMenuOpen, setLevelMenuOpen] = useState(false);
   //Refonte niveau 3
   const [l3RecordingReviewOpen, setL3RecordingReviewOpen] = useState(false);
@@ -126,7 +143,26 @@ export default function Page() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  //15 mars
+  useEffect(() => {
+  async function loadUser() {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
+    if (error) {
+      console.error("auth getUser error", error);
+    }
+
+    setCurrentUserEmail(user?.email ?? null);
+    setAuthChecked(true);
+  }
+
+  loadUser();
+}, []);
+
+//end
 
   function togglePlay(url: string) {
     // si c'est déjà en train de jouer => stop
@@ -165,7 +201,6 @@ export default function Page() {
   useEffect(() => {
     rootRef.current = root;
   }, [root]);
-
 
   // Pour avoir un lien direct vers un profil
 
@@ -984,8 +1019,16 @@ function toggleLearningMenu() {
   if (!mounted) return null;
 
   return (
-    <div style={styles.page}>
-      {/* Fly animation */}
+  <div style={styles.page}>
+    <div style={{ marginBottom: 12, fontSize: 14 }}>
+      {!authChecked
+        ? "Vérification session..."
+        : currentUserEmail
+        ? `Connecté : ${currentUserEmail}`
+        : "Non connecté"}
+    </div>
+      
+      {/* Fly animation 
       {fly && (
         <div
           key={fly.id}
@@ -1005,7 +1048,7 @@ function toggleLearningMenu() {
             <span style={styles.flyEmoji}>{fly.emoji ?? "✨"}</span>
           )}
         </div>
-      )}
+      )}*/}
 
       {/* Celebration overlay */}
       {celebrating && (
@@ -1210,67 +1253,7 @@ function toggleLearningMenu() {
                 </div>
               )}
             </div>
-            {/* Ancien menu de choix des langues dans le jeu
-            <div style={{ position: "relative" }}>
-  
-      <button
-        type="button"
-        style={styles.learnBtn}
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleLearningMenu();
-        }}
-        disabled={!hasProfiles}
-        aria-label="Choose learning language"
-        title="Choose learning language"
-      >
-        <span style={styles.learnBtnText}>
-          {String(learningLang).toUpperCase()}
-        </span>
-        <span style={styles.levelBtnCaret} aria-hidden="true">▾</span>
-      </button>
-
-
-      {learningMenuOpen && hasProfiles && (
-        <div style={styles.levelPopover} onClick={(e) => e.stopPropagation()}>
-          
-          <div style={styles.profilePopoverTitle}>
-            {uiLang === "fr" ? "Langue apprise" : "Learning language"}
-          </div>
-
-
-       
-      <div style={styles.levelList}>
-        {(["fa", "en", "fr"] as LearningLang[]).map((lng) => {
-          const isActive = learningLang === lng;
-          return (
-            <button
-              key={lng}
-              type="button"
-              style={{
-                ...styles.levelListItem,
-                ...(isActive ? styles.levelListItemActive : null),
-              }}
-              onClick={() => {
-                setLearningLang(lng);
-                setLearningMenuOpen(false);
-              }}
-            >
-              <span style={styles.levelItemName}>
-                {lng === "fa" ? (uiLang === "fr" ? "Persan" : "Farsi")
-                  : lng === "en" ? "English"
-                  : uiLang === "fr" ? "Français" : "French"}
-              </span>
-              {isActive && <span style={styles.profileItemCheck}>✓</span>}
-            </button>
-          );
-        })}
-      </div>
-     
-    </div>
-  )}
-</div>
-*/}
+            {}
 
 
           </div>
@@ -1284,73 +1267,7 @@ function toggleLearningMenu() {
                 >
                   EXIT
                 </button>
-          {/* ancien menu profil avatar
-
-          <div style={styles.avatarWrap} onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              style={styles.avatarBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleProfileMenu();
-              }}
-              aria-label="Profile menu"
-              title="Profile menu"
-              disabled={!hasProfiles}
-            >
-              <span style={styles.avatarImg} aria-hidden="true">
-                {activeProfile?.avatar ?? "👧"}
-              </span>
-            </button>
-
-            {profileMenuOpen && hasProfiles && (
-              <div style={styles.profilePopover}>
-                <div style={styles.profilePopoverTitle}>{t("menu.profilesTitle")}</div>
-
-                <div style={styles.profileList}>
-                  {root.profiles.map((p) => {
-                    const isActive = p.id === root.activeProfileId;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        style={{
-                          ...styles.profileListItem,
-                          ...(isActive ? styles.profileListItemActive : null),
-                        }}
-                        onClick={() => {
-                          setRoot((r) => setActiveProfile(r, p.id));
-                          setProfileMenuOpen(false);
-                        }}
-                      >
-                        <span style={styles.profileItemAvatar} aria-hidden="true">
-                          {p.avatar ?? "👧"}
-                        </span>
-                        <span style={styles.profileItemName}>{p.name}</span>
-                        {isActive && <span style={styles.profileItemCheck}>✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div style={styles.profilePopoverDivider} />
-
-                <div style={styles.profilePopoverDivider} />
-
-                <button
-                  type="button"
-                  style={styles.profileSettingsBtn}
-                  onClick={() => {
-                    setProfileMenuOpen(false);
-                    window.location.href = "/settings";
-                  }}
-                >
-                  {t("menu.settings")}
-                </button>
-              </div>
-            )}
-          </div> 
-          */}
+          {}
         </header>
 
         {!hasProfiles ? (

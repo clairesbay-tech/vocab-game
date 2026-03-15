@@ -1,48 +1,72 @@
-export default function LoginPage() {
-  return (
-    <main style={{ padding: 24 }}>
-      <h1>Connexion désactivée</h1>
-      <p>Version MVP sans authentification.</p>
-    </main>
-  );
-}
-/*
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  async function signUp() {
+    setMessage("");
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage("Compte créé. Vérifie ton email si une confirmation est demandée.");
+    }
+  }
+
+  async function signIn() {
+    setMessage("");
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage("Connexion réussie.");
+      window.location.href = "/";
+    }
+  }
 
   return (
-    <div style={{ padding: 24, maxWidth: 420 }}>
+    <div style={{ padding: 24, maxWidth: 420, margin: "40px auto", display: "grid", gap: 12 }}>
       <h1>Connexion</h1>
-      <p>Reçois un lien magique par email.</p>
 
-      {sent ? (
-        <p>✅ Lien envoyé ! Vérifie ta boîte mail.</p>
-      ) : (
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            await signIn("email", { email, callbackUrl: "/settings" });
-            setSent(true);
-          }}
-        >
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@exemple.com"
-            style={{ width: "100%", padding: 12, marginTop: 12 }}
-          />
-          <button style={{ marginTop: 12, padding: 12, width: "100%" }}>
-            Envoyer le lien
-          </button>
-        </form>
-      )}
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+      />
+
+      <input
+        type="password"
+        placeholder="Mot de passe"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
+      />
+
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={signIn} style={{ padding: "10px 14px" }}>
+          Se connecter
+        </button>
+        <button onClick={signUp} style={{ padding: "10px 14px" }}>
+          Créer un compte
+        </button>
+      </div>
+
+      {message && <p>{message}</p>}
     </div>
   );
 }
-  */
