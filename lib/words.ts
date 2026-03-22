@@ -188,7 +188,7 @@ export const WORDS: WordDef[] = [
     families: ["animals"],
     imageEmoji: "🐱",
     learning: {
-      fa: { text: "گربه", trans: "GOR-BEH", audioUrl: A("fa", "gorbeh") },
+      fa: { text: "گربه", trans: "GOR-BEH", audioUrl: A("fa", "gorbeh"), hintAudioUrl: A("fa", "gorbeh_hint")  },
       fr: { text: "chat", trans: "SHA", audioUrl: A("fr", "cat") },
       en: { text: "cat", trans: "KAT", audioUrl: A("en", "cat") },
       es: { text: "gato", trans: "GA-TO", audioUrl: A("es", "cat") },
@@ -333,7 +333,7 @@ export const WORDS: WordDef[] = [
     families: ["vetements"],
     imageEmoji: "🧦",
     learning: {
-      fa: { text: "جوراب", trans: "DJOU-RÂB", audioUrl: A("fa", "jourab") },
+      fa: { text: "جوراب", trans: "DJOU-RÂB", audioUrl: A("fa", "jourab"), hintAudioUrl: A("fa", "jourab_hint") },
       fr: { text: "chaussette", trans: "SHO-SET", audioUrl: A("fr", "chaussettes") },
       en: { text: "sock", trans: "SOK", audioUrl: A("en", "chaussettes") },
       es: { text: "calcetín", trans: "KAL-SE-TIN", audioUrl: A("es", "chaussettes") },
