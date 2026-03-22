@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import {
   type RootState,
-  loadRootState,
+    
   saveRootState,
   setActiveProfile,
   addProfile,
@@ -16,6 +16,8 @@ import {
 } from "../../lib/profiles";
 
 import type { LearningLang } from "../../lib/words";
+import { supabase } from "@/lib/supabase";
+import type { ProfileLang } from "@/lib/profiles";
 
 const AVATARS = ["👧", "👦", "🧒", "👩", "👨", "👵", "👴", "🐼", "🐱", "🐶", "🦊", "🐯"];
 
@@ -34,17 +36,69 @@ export default function SettingsClient() {
   }));
   const [mounted, setMounted] = useState(false);
 
+  // Utilisateur connecté
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   // Load
   useEffect(() => {
-    const loaded = loadRootState();
-    setRoot(loaded);
-    setMounted(true);
+    async function loadSettings() {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error("auth getUser error", userError);
+        setMounted(true);
+        return;
+      }
+
+      setCurrentUserId(user?.id ?? null);
+
+      if (!user?.id) {
+        setRoot({
+          activeProfileId: "",
+          profiles: [],
+        });
+        setMounted(true);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name, avatar, ui_lang")
+        .eq("user_id", user.id)
+        .order("name", { ascending: true });
+
+      if (error) {
+        console.error("load settings profiles error", error);
+        setMounted(true);
+        return;
+      }
+
+      const profiles =
+        data?.map((p) => ({
+          id: p.id,
+          name: p.name,
+          avatar: p.avatar ?? "👧",
+          lang: (p.ui_lang ?? "fr") as ProfileLang,
+          state: buildInitialProfileState(),
+        })) ?? [];
+
+      setRoot({
+        activeProfileId: profiles[0]?.id ?? "",
+        profiles,
+      });
+
+      setMounted(true);
+    }
+
+    loadSettings();
   }, []);
 
   // Persist
   useEffect(() => {
     if (!mounted) return;
-    saveRootState(root);
   }, [root, mounted]);
 
   const hasProfiles = root.profiles.length > 0;
@@ -65,19 +119,59 @@ export default function SettingsClient() {
     window.location.href = "/";
   }
 
-  function updateProfileMeta(profileId: string, patch: { avatar?: string; lang?: "fr" | "en" }) {
+  //Mise à jour du profil sur Supabase
+  async function updateProfileMeta(
+    profileId: string,
+    patch: { avatar?: string; lang?: "fr" | "en" }
+  ) {
+    const dbPatch: Record<string, string> = {};
+
+    if (patch.avatar !== undefined) dbPatch.avatar = patch.avatar;
+    if (patch.lang !== undefined) dbPatch.ui_lang = patch.lang;
+
+    if (Object.keys(dbPatch).length > 0) {
+      const { error } = await supabase
+        .from("profiles")
+        .update(dbPatch)
+        .eq("id", profileId);
+
+      if (error) {
+        console.error("update profile meta error", error);
+        alert(`Erreur mise à jour profil : ${error.message}`);
+        return;
+      }
+    }
+
     setRoot((r) => {
       const rr: any = r;
       return {
         ...rr,
-        profiles: rr.profiles.map((p: any) => (p.id === profileId ? { ...p, ...patch } : p)),
+        profiles: rr.profiles.map((p: any) =>
+          p.id === profileId ? { ...p, ...patch } : p
+        ),
       };
     });
   }
 
-  function resetProfile(profileId: string) {
+  async function resetProfile(profileId: string) {
     const ok = window.confirm("Reset de ce profil ? (progression + enregistrements)");
     if (!ok) return;
+
+    const profile = root.profiles.find((p) => p.id === profileId);
+    if (!profile) return;
+
+    const nextState = buildInitialProfileState();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ root_state: nextState })
+      .eq("id", profileId);
+
+    if (error) {
+      console.error("reset profile error", error);
+      alert(`Erreur reset : ${error.message}`);
+      return;
+    }
 
     setRoot((r) => {
       const rr: any = r;
@@ -87,32 +181,110 @@ export default function SettingsClient() {
           if (p.id !== profileId) return p;
           return {
             ...p,
-            state: {
-              ...buildInitialProfileState(),
-              mode: p.state?.mode ?? 1,
-            },
+            state: nextState,
           };
         }),
       };
     });
   }
 
-  function onAddProfile() {
-    setRoot((r) => addProfile(r));
+  async function onAddProfile() {
+    if (!currentUserId) {
+      alert("Utilisateur non connecté");
+      return;
+    }
+
+    const name = window.prompt("Nom du profil ?");
+    if (!name?.trim()) return;
+
+    const profileId = crypto.randomUUID();
+    const avatar = "👧";
+    const lang: ProfileLang = "fr";
+
+    const { error } = await supabase.from("profiles").insert([
+      {
+        id: profileId,
+        user_id: currentUserId,
+        name: name.trim(),
+        avatar,
+        ui_lang: lang,
+      },
+    ]);
+
+    if (error) {
+      console.error("create profile error", error);
+      alert(`Erreur création profil : ${error.message}`);
+      return;
+    }
+
+    setRoot((r) => ({
+      ...r,
+      activeProfileId: r.activeProfileId || profileId,
+      profiles: [
+        ...r.profiles,
+        {
+          id: profileId,
+          name: name.trim(),
+          avatar,
+          lang,
+          state: buildInitialProfileState(),
+        } as any,
+      ],
+    }));
   }
 
-  function onRename(profileId: string, currentName: string) {
+  // Mise à jour du nom du profile dans Supabase
+  async function onRename(profileId: string, currentName: string) {
     const name = window.prompt("Nouveau nom du profil :", currentName);
     if (!name) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ name })
+      .eq("id", profileId);
+
+    if (error) {
+      console.error("rename profile error", error);
+      alert(`Erreur renommage : ${error.message}`);
+      return;
+    }
+
     setRoot((r) => renameProfile(r, profileId, name));
   }
 
-  function onDelete(profileId: string) {
+  //Suppression du prodfile dans Supabase
+  async function onDelete(profileId: string) {
     const ok = window.confirm("Supprimer ce profil ? (Ses résultats seront perdus)");
     if (!ok) return;
-    setRoot((r) => deleteProfile(r, profileId));
+
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", profileId);
+
+    if (error) {
+      console.error("delete profile error", error);
+      alert(`Erreur suppression : ${error.message}`);
+      return;
+    }
+
+    setRoot((r) => {
+      const remainingProfiles = r.profiles.filter((p) => p.id !== profileId);
+
+      const nextActiveProfileId =
+        r.activeProfileId !== profileId
+          ? r.activeProfileId
+          : remainingProfiles[0]?.id ?? "";
+
+      return {
+        ...r,
+        activeProfileId: nextActiveProfileId,
+        profiles: remainingProfiles,
+      };
+    });
   }
 
+  
   function goBack() {
     router.push("/");
   }

@@ -7,8 +7,6 @@ import {
   type Level,
   type Mode,
   type RootState,
-  loadRootState,
-  saveRootState,
   getActiveProfile,
   updateActiveProfileState,
   setActiveProfile,
@@ -103,7 +101,9 @@ export default function Page() {
 
   // New 15 mars authentication
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+
   // End new
 
   const [levelMenuOpen, setLevelMenuOpen] = useState(false);
@@ -145,22 +145,23 @@ export default function Page() {
 
   //15 mars
   useEffect(() => {
-  async function loadUser() {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+    async function loadUser() {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
 
-    if (error) {
-      console.error("auth getUser error", error);
+      if (error) {
+        console.error("auth getUser error", error);
+      }
+
+      setCurrentUserEmail(user?.email ?? null);
+      setCurrentUserId(user?.id ?? null);
+      setAuthChecked(true);
     }
 
-    setCurrentUserEmail(user?.email ?? null);
-    setAuthChecked(true);
-  }
-
-  loadUser();
-}, []);
+    loadUser();
+  }, []);
 
 //end
 
@@ -205,21 +206,21 @@ export default function Page() {
   // Pour avoir un lien direct vers un profil
 
   useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const profile = params.get("profile");
+    const params = new URLSearchParams(window.location.search);
+    const profileName = params.get("profile");
 
-  if (!profile) return;
+    if (!profileName) return;
+    if (!mounted) return;
+    if (!root.profiles.length) return;
 
-  const root = loadRootState();
-  const found = root.profiles.find(
-    (p) => p.name.toLowerCase() === profile.toLowerCase()
-  );
+    const found = root.profiles.find(
+      (p) => p.name.toLowerCase() === profileName.toLowerCase()
+    );
 
-  if (!found) return;
+    if (!found) return;
 
-  const next = setActiveProfile(root, found.id);
-  saveRootState(next);
-}, []);
+    setRoot((r) => setActiveProfile(r, found.id));
+  }, [mounted, root.profiles]);
 
   // Close menu when we click somewhere else
   useEffect(() => {
@@ -270,23 +271,103 @@ function toggleLearningMenu() {
   });
 }
 
-  // load once
-  useEffect(() => {
-    const loaded = loadRootState();
-    setRoot(loaded);
+  // load once 21 mars
+useEffect(() => {
+  async function loadApp() {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error("auth getUser error", userError);
+      setRoot({
+        activeProfileId: "",
+        profiles: [],
+      });
+      setMounted(true);
+      return;
+    }
+
+    if (!user?.id) {
+      setRoot({
+        activeProfileId: "",
+        profiles: [],
+      });
+      setMounted(true);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, name, avatar, ui_lang, root_state")
+      .eq("user_id", user.id)
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("load profiles error", error);
+      setRoot({
+        activeProfileId: "",
+        profiles: [],
+      });
+      setMounted(true);
+      return;
+    }
+
+    const profilesFromDb =
+      data?.map((p) => ({
+        id: p.id,
+        name: p.name,
+        avatar: p.avatar ?? "👧",
+        lang: (p.ui_lang ?? "fr") as ProfileLang,
+        state: (p.root_state as any) ?? buildInitialProfileState(),
+      })) ?? [];
+
+    setRoot({
+      activeProfileId: profilesFromDb[0]?.id ?? "",
+      profiles: profilesFromDb,
+    });
+
     setMounted(true);
-  }, []);
+  }
+
+  loadApp();
+}, []);
 
   // persist
+  //21 mars
   useEffect(() => {
-    if (!mounted) return;
-    saveRootState(root);
+    async function saveActiveProfileState() {
+      if (!mounted) return;
+      if (!root.activeProfileId) return;
+
+      const activeProfile = root.profiles.find(
+        (p) => p.id === root.activeProfileId
+      );
+      if (!activeProfile) return;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          root_state: activeProfile.state,
+        })
+        .eq("id", activeProfile.id);
+
+      if (error) {
+        console.error("save active profile state error", error);
+      }
+    }
+
+    saveActiveProfileState();
   }, [root, mounted]);
+
 
   const hasProfiles = root.profiles.length > 0;
   const activeProfile = useMemo(() => (hasProfiles ? getActiveProfile(root) : null), [root, hasProfiles]);
 
   const state = activeProfile?.state ?? buildInitialProfileState();
+
+
   
   // ✅ Langue UI dépend du profil
     const uiLang: ProfileLang = activeProfile?.lang ?? "fr";
@@ -315,6 +396,7 @@ function toggleLearningMenu() {
     if (!selectedFamiliesSet.size) return [];
     return WORDS.filter((w) => intersects(w.families ?? [], selectedFamiliesSet));
   }, [selectedFamiliesSet]);
+
 
   function countWordsInLevel(level: Level): number {
     return activeWords.reduce((acc, w) => {
@@ -845,8 +927,7 @@ function toggleLearningMenu() {
           if (!currentWord) return;
 
           const hintUrl =
-            (currentWord.learning[learningLang] as any)?.hintAudioUrl ||
-            currentWord.learning[learningLang]?.audioUrl;
+            (currentWord.learning[learningLang] as any)?.hintAudioUrl;
 
           if (!hintUrl) return;
 
@@ -952,9 +1033,58 @@ function toggleLearningMenu() {
     refreshCurrentWord();
   }
 
-  // Profile actions
-  function onAddProfile() {
-    setRoot((r) => addProfile(r));
+  // Profile actions 15 mars
+  async function onAddProfile() {
+    if (!currentUserId) {
+      alert("Utilisateur non connecté");
+      return;
+    }
+    console.log("ADD PROFILE CLICKED", currentUserId);
+    const name = window.prompt("Nom du profil ?");
+    if (!name?.trim()) return;
+
+    const profileId = crypto.randomUUID();
+    const avatar = "👧";
+    const lang: ProfileLang = "fr";
+
+    console.log("ABOUT TO INSERT", {
+      id: profileId,
+      user_id: currentUserId,
+      name: name.trim(),
+      avatar,
+      ui_lang: lang,
+    });
+    const { error } = await supabase.from("profiles").insert([
+      {
+        id: profileId,
+        user_id: currentUserId,
+        name: name.trim(),
+        avatar,
+        ui_lang: lang,
+      },
+    ]);
+    console.log("INSERT RESULT", { error, profileId, currentUserId, name: name.trim() });
+
+    if (error) {
+      console.error("create profile error", error);
+      alert(`Erreur création profil : ${error.message}`);
+      return;
+    }
+
+    setRoot((r) => ({
+      ...r,
+      activeProfileId: r.activeProfileId || profileId,
+      profiles: [
+        ...r.profiles,
+        {
+          id: profileId,
+          name: name.trim(),
+          avatar,
+          lang,
+          state: buildInitialProfileState(),
+        } as any,
+      ],
+    }));
   }
 
   function onRenameActive() {
@@ -1015,6 +1145,12 @@ function toggleLearningMenu() {
   }
 
   const displayedRecording = currentWordId ? recordingsForLang[currentWordId] : null;
+
+  // c'est ici dans le composant juste avant le return
+  const hasHint =
+  !!(currentWord &&
+     (currentWord.learning[learningLang] as any)?.hintAudioUrl);
+
 
   if (!mounted) return null;
 
@@ -1471,8 +1607,12 @@ function toggleLearningMenu() {
 
             <button
               type="button"
-              style={styles.secondaryBtn}
+              style={{
+                ...styles.secondaryBtn,
+                ...(hasHint ? {} : styles.disabledBtn),
+              }}
               onClick={playHintL3}
+              disabled={!hasHint}
             >
               Indice
             </button>
@@ -2167,5 +2307,10 @@ recordBtnActive: {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+},
+
+disabledBtn: {
+  opacity: 0.4,
+  cursor: "not-allowed",
 },
 };
