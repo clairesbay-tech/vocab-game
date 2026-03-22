@@ -298,6 +298,8 @@ useEffect(() => {
       return;
     }
 
+
+
     const { data, error } = await supabase
       .from("profiles")
       .select("id, name, avatar, ui_lang, root_state")
@@ -361,6 +363,19 @@ useEffect(() => {
     saveActiveProfileState();
   }, [root, mounted]);
 
+      //redirriger vers la page de login si pas connecté
+    useEffect(() => {
+    if (!mounted) return;
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (currentUserId && root.profiles.length === 0) {
+      window.location.href = "/settings";
+    }
+  }, [mounted, currentUserId, root.profiles.length]);
 
   const hasProfiles = root.profiles.length > 0;
   const activeProfile = useMemo(() => (hasProfiles ? getActiveProfile(root) : null), [root, hasProfiles]);
@@ -1152,7 +1167,7 @@ useEffect(() => {
      (currentWord.learning[learningLang] as any)?.hintAudioUrl);
 
 
-  if (!mounted) return null;
+  if (!mounted || !authChecked) return null;
 
   return (
   <div style={styles.page}>
@@ -1406,14 +1421,11 @@ useEffect(() => {
           {}
         </header>
 
-        {!hasProfiles ? (
-          <div style={styles.section}>
-            <div style={{ fontSize: 16, marginBottom: 10 }}>{t("empty.noProfilesTitle")}</div>
-            <button style={styles.primaryBtn} onClick={onAddProfile}>
-              {t("empty.addProfileBtn")}
-            </button>
-          </div>
-        ) : (
+          {!hasProfiles ? (
+            <div style={styles.section}>
+              Chargement...
+            </div>
+          ) : (
           <main style={{ display: "grid", gap: 16 }}>
             {/* Si on est en mode 1 et qu'il n'y a plus de mot, on garde quand même les familles */}
             {(state as any).mode === 1 && (!currentWord || !currentWordId || !currentWordState) && (
