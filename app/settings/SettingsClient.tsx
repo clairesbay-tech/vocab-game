@@ -66,7 +66,7 @@ export default function SettingsClient() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, name, avatar, ui_lang")
+        .select("id, name, avatar, ui_lang, root_state")
         .eq("user_id", user.id)
         .order("name", { ascending: true });
 
@@ -82,7 +82,7 @@ export default function SettingsClient() {
           name: p.name,
           avatar: p.avatar ?? "👧",
           lang: (p.ui_lang ?? "fr") as ProfileLang,
-          state: buildInitialProfileState(),
+          state: (p.root_state as any) ?? buildInitialProfileState(),
         })) ?? [];
 
       setRoot({
@@ -109,14 +109,49 @@ export default function SettingsClient() {
     return p?.name ?? "";
   }, [root.profiles, activeProfileId]);
 
-  function goPlayForProfile(profileId: string, lang: LearningLang) {
-    setRoot((r) => {
-      let next = setActiveProfile(r, profileId);
-      next = setActiveLearningLang(next, profileId, lang);
-      saveRootState(next);
-      return next;
-    });
-    window.location.href = "/";
+  //fonction pour mettre à jour la langue
+  async function updateLearningLang(profileId: string, lang: LearningLang) {
+    const profile = root.profiles.find((p) => p.id === profileId);
+    if (!profile) return;
+
+    const nextState = {
+      ...(profile.state as any),
+      activeLearningLang: lang,
+    };
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ root_state: nextState })
+      .eq("id", profileId);
+
+    if (error) {
+      console.error("update learning lang error", error);
+      alert(`Erreur mise à jour langue : ${error.message}`);
+      return;
+    }
+
+    setRoot((r) => ({
+      ...r,
+      profiles: r.profiles.map((p: any) =>
+        p.id === profileId
+          ? {
+              ...p,
+              state: nextState,
+            }
+          : p
+      ),
+    }));
+  }
+
+  //fonction pour aller jouer
+  function goPlayForProfile(profileId: string) {
+    const next = setActiveProfile(root, profileId);
+    const updatedProfile = next.profiles.find((p) => p.id === profileId);
+    if (!updatedProfile) return;
+
+    setRoot(next);
+    saveRootState(next);
+    window.location.href = `/?profile=${encodeURIComponent(updatedProfile.name)}`;
   }
 
   //Mise à jour du profil sur Supabase
@@ -334,7 +369,12 @@ return (
                       </div>
                     </div>
                   </div>
-
+                    <button
+                      style={styles.btn}
+                      onClick={() => goPlayForProfile(p.id)}
+                    >
+                      ▶️ Jouer
+                    </button>
                   <div style={styles.section}>
                     <div style={styles.label}>Avatar</div>
                     <div style={styles.avatarChoices}>
@@ -379,7 +419,7 @@ return (
                           <button
                             key={lng.id}
                             type="button"
-                            onClick={() => goPlayForProfile(p.id, lng.id)}
+                            onClick={() => updateLearningLang(p.id, lng.id)}
                             style={{ ...styles.langBtn, ...(isActiveLng ? styles.langOn : styles.langOff) }}
                           >
                             {lng.label}
@@ -389,20 +429,24 @@ return (
                     </div>
                   </div>
 
-                  <div style={styles.section}>
-                    <div style={styles.label}>Actions</div>
-                    <div style={styles.rowWrap}>
-                      <button style={styles.btn} onClick={() => onRename(p.id, p.name)}>
-                        ✏️ Renommer
-                      </button>
-                      <button style={styles.btn} onClick={() => resetProfile(p.id)}>
-                        🔄 Reset
-                      </button>
-                      <button style={styles.btnDanger} onClick={() => onDelete(p.id)}>
-                        🗑️ Supprimer
-                      </button>
-                    </div>
+                 <div style={styles.section}>
+                  <div style={styles.label}>Actions</div>
+                  <div style={styles.rowWrap}>
+
+
+                    <button style={styles.btn} onClick={() => onRename(p.id, p.name)}>
+                      ✏️ Renommer
+                    </button>
+
+                    <button style={styles.btn} onClick={() => resetProfile(p.id)}>
+                      🔄 Reset
+                    </button>
+
+                    <button style={styles.btnDanger} onClick={() => onDelete(p.id)}>
+                      🗑️ Supprimer
+                    </button>
                   </div>
+                </div>
                 </div>
               );
             })}

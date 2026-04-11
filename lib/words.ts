@@ -1,7 +1,9 @@
 // lib/words.ts
+
 // Quand j'ajoute un mot, je dois vérifier que la famille existe
 export type LearningLang = "fa" | "es" | "fr" | "en";
 
+import type { Mode1Voice } from "./mode1Voices";
 export type WordDef = {
   id: string;
   families: string[];
@@ -18,6 +20,7 @@ export type WordDef = {
       }
     >
   >;
+  mode1Voices?: Mode1Voice[];
 };
 
 // helper: audio par convention /public/audio/<lang>/<id>.m4a
@@ -30,19 +33,17 @@ export const WORDS: WordDef[] = [
     families: ["erfan"],
     learning: {
       fa: { text: "نَتیجَتاً", trans: "NA-TI-DJA-TAN", audioUrl: A("fa", "natijatan"), hintAudioUrl: A("fa", "natijatan_hint") },
-      fr: { text: "par conséquent", trans: "", audioUrl: A("fr", "apple") },
-      es: { text: "manzana", trans: "man-THA-na", audioUrl: A("es", "apple") },
-      en: { text: "apple", trans: "A-PUL", audioUrl: A("en", "apple") },
+      fr: { text: "par conséquent", trans: "", audioUrl: A("fr", "parconsequent") },
+      es: { text: "?", trans: "?", audioUrl: A("es", "?") },
+      en: { text: "as a result", trans: "AZ EU RIZEULT", audioUrl: A("en", "asaresult") },
     },
   },
   {
     id: "matlab",
     families: ["erfan"],
     learning: {
-      fa: { text: "مَطلَب", trans: "MAT-LAB", audioUrl: A("fa", "matlab") },
-      fr: { text: "sujet", trans: "POM", audioUrl: A("fr", "apple") },
-      es: { text: "manzana", trans: "man-THA-na", audioUrl: A("es", "apple") },
-      en: { text: "apple", trans: "A-PUL", audioUrl: A("en", "apple") },
+      fa: { text: "مَطلَب", trans: "MAT-LAB", audioUrl: A("fa", "matlab"), hintAudioUrl: A("fa", "ma_hint")},
+      fr: { text: "sujet", trans: "SU-JET", audioUrl: A("fr", "sujet") },
     },
   },
   // FRUITS
@@ -51,7 +52,7 @@ export const WORDS: WordDef[] = [
     families: ["fruits"],
     imageEmoji: "🍎",
     learning: {
-      fa: { text: "سیب", trans: "SIB", audioUrl: A("fa", "sib") },
+      fa: { text: "سیب", trans: "SIB", audioUrl: A("fa", "sib"), hintAudioUrl: A("fa", "hint_si")},
       fr: { text: "pomme", trans: "POM", audioUrl: A("fr", "apple") },
       es: { text: "manzana", trans: "man-THA-na", audioUrl: A("es", "apple") },
       en: { text: "apple", trans: "A-PUL", audioUrl: A("en", "apple") },
@@ -62,7 +63,7 @@ export const WORDS: WordDef[] = [
     families: ["fruits"],
     imageEmoji: "🍌",
     learning: {
-      fa: { text: "موز", trans: "MOZ", audioUrl: A("fa", "moz") },
+      fa: { text: "موز", trans: "MOZ", audioUrl: A("fa", "moz"), hintAudioUrl: A("fa", "moz_hint")},
       fr: { text: "banane", trans: "BA-NAN", audioUrl: A("fr", "banana") },
       en: { text: "banana", trans: "BA-NA-NA", audioUrl: A("en", "banana") },
       es: { text: "plátano", trans: "PLA-TA-NO", audioUrl: A("es", "banana") },
@@ -73,7 +74,7 @@ export const WORDS: WordDef[] = [
     families: ["fruits"],
     imageEmoji: "🍊",
     learning: {
-      fa: { text: "پرتقال", trans: "POR-TE-GHAL", audioUrl: A("fa", "orange") },
+      fa: { text: "پرتقال", trans: "POR-TE-GHAL", audioUrl: A("fa", "orange"), hintAudioUrl: A("fa", "orange_hint")},
       fr: { text: "orange", trans: "O-RANJ", audioUrl: A("fr", "orange") },
       en: { text: "orange", trans: "OR-ANJ", audioUrl: A("en", "orange") },
       es: { text: "naranja", trans: "NA-RAN-KHA", audioUrl: A("es", "orange") },
@@ -84,7 +85,7 @@ export const WORDS: WordDef[] = [
     families: ["fruits"],
     imageEmoji: "🍇",
     learning: {
-      fa: { text: "انگور", trans: "AN-GOUR", audioUrl: A("fa", "grape") },
+      fa: { text: "انگور", trans: "AN-GOUR", audioUrl: A("fa", "grape"), hintAudioUrl: A("fa", "grape_hint")},
       fr: { text: "raisin", trans: "RÈ-ZIN", audioUrl: A("fr", "grape") },
       en: { text: "grape", trans: "GREYP", audioUrl: A("en", "grape") },
       es: { text: "uva", trans: "OU-VA", audioUrl: A("es", "grape") },
@@ -95,8 +96,8 @@ export const WORDS: WordDef[] = [
     families: ["fruits"],
     imageEmoji: "🍓",
     learning: {
-      fa: { text: "توت فرنگی", trans: "TOUT FA-RAN-GUI", audioUrl: A("fa", "strawberry") },
-      fr: { text: "fraise", trans: "FRÈZ", audioUrl: A("fr", "strawberry") },
+      fa: { text: "توت فرنگی", trans: "TOUT FA-RAN-GUI", audioUrl: A("fa", "toutfarangi") },
+      fr: { text: "fraise", trans: "FRÈZ", audioUrl: A("fr", "fraise") },
       en: { text: "strawberry", trans: "STRAO-BEH-RI", audioUrl: A("en", "strawberry") },
       es: { text: "fresa", trans: "FRÈ-SA", audioUrl: A("es", "strawberry") },
     },
@@ -128,8 +129,8 @@ export const WORDS: WordDef[] = [
     families: ["fruits"],
     imageEmoji: "🍍",
     learning: {
-      fa: { text: "آناناس", trans: "Â-NÂ-NÂS", audioUrl: A("fa", "pineapple") },
-      fr: { text: "ananas", trans: "A-NA-NA", audioUrl: A("fr", "pineapple") },
+      fa: { text: "آناناس", trans: "Â-NÂ-NÂS", audioUrl: A("fa", "ananas") },
+      fr: { text: "ananas", trans: "A-NA-NA", audioUrl: A("fr", "ananas") },
       en: { text: "pineapple", trans: "PAÏN-A-PUL", audioUrl: A("en", "pineapple") },
       es: { text: "piña", trans: "PI-NYA", audioUrl: A("es", "pineapple") },
     },
@@ -163,11 +164,12 @@ export const WORDS: WordDef[] = [
     id: "cestquoi",
     families: ["questions"],
     imageUrl: "/images/cestquoi.png",
+    mode1Voices: ["maman"],
     learning: {
-      fa: { text: "این چیه؟", trans: "IN TCHI-E", audioUrl: A("fa", "intchieh") },
-      fr: { text: "C'est quoi ça ?", trans: "KES KEU SÈ", audioUrl: A("fr", "cesquoi"), hintAudioUrl: A("fa", "hint_intchieh") },
-      en: { text: "What is it?", trans: "OUAT IZ IT", audioUrl: A("en", "whatisit") },
-      es: { text: "perro", trans: "PÉ-RRO", audioUrl: A("es", "dog") },
+      fa: { text: "این چیه؟", trans: "IN TCHI-E", audioUrl: A("fa", "intchieh"), hintAudioUrl: A("fa", "hint_intchieh")},
+      fr: { text: "C'est quoi ça ?", trans: "KES KEU SÈ", audioUrl: A("fr", "cestquoi")},
+      en: { text: "What is it?", trans: "OUAT IZ IT", audioUrl: A("en", "cestquoi") },
+      es: { text: "perro", trans: "PÉ-RRO", audioUrl: A("es", "cestquoi") },
     },
   },
 
@@ -188,7 +190,7 @@ export const WORDS: WordDef[] = [
     families: ["animals"],
     imageEmoji: "🐱",
     learning: {
-      fa: { text: "گربه", trans: "GOR-BEH", audioUrl: A("fa", "gorbeh"), hintAudioUrl: A("fa", "gorbeh_hint")  },
+      fa: { text: "گربه", trans: "GOR-BEH", audioUrl: A("fa", "gorbeh"), hintAudioUrl: A("fa", "gorbeh_hint")},
       fr: { text: "chat", trans: "SHA", audioUrl: A("fr", "cat") },
       en: { text: "cat", trans: "KAT", audioUrl: A("en", "cat") },
       es: { text: "gato", trans: "GA-TO", audioUrl: A("es", "cat") },

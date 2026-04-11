@@ -4,6 +4,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { WORDS, type WordDef, type LearningLang } from "../lib/words";
 import { FAMILIES, type FamilyDef, familyIcon } from "../lib/families";
 import {
+  type Mode1Voice,
+  getMode1AudioCandidates,
+  getMode1VoiceLabel,
+} from "@/lib/mode1Voices";
+import {
   type Level,
   type Mode,
   type RootState,
@@ -99,12 +104,22 @@ export default function Page() {
   }, []);
   // Fin test
 
-  // New 15 mars authentication
+  // Créer une queue de retry
+  const [mode1RetryQueue, setMode1RetryQueue] = useState<string[]>([]);
+
+  // Authentication
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // End new
+  // Voice options
+  const [mode1Choices, setMode1Choices] = useState<Mode1Voice[]>([]);
+  const [selectedMode1Voice, setSelectedMode1Voice] = useState<Mode1Voice | null>(null);
+  const [isMode1FlowRunning, setIsMode1FlowRunning] = useState(false);
+  const [showMode1Validation, setShowMode1Validation] = useState(false);
+  const [lastRecordingUrl, setLastRecordingUrl] = useState<string | null>(null);
+  const [mode1Message, setMode1Message] = useState<string | null>(null);
+
 
   const [levelMenuOpen, setLevelMenuOpen] = useState(false);
   //Refonte niveau 3
@@ -163,7 +178,7 @@ export default function Page() {
     loadUser();
   }, []);
 
-//end
+
 
   function togglePlay(url: string) {
     // si c'est déjà en train de jouer => stop
@@ -336,6 +351,8 @@ useEffect(() => {
   loadApp();
 }, []);
 
+
+
   // persist
   //21 mars
   useEffect(() => {
@@ -445,13 +462,67 @@ useEffect(() => {
     setIsPlaying(false);
   });
 }
+
+// fallback vers maman
+async function playMode1Audio(voice: Mode1Voice) {
+  if (!currentWord) return;
+
+  const baseUrl = currentWord.learning[learningLang]?.audioUrl;
+  if (!baseUrl) {
+    setMode1Message("Audio introuvable");
+    return;
+  }
+
+  const fileName = baseUrl.split("/").pop();
+  if (!fileName) {
+    setMode1Message("Audio introuvable");
+    return;
+  }
+
+  const url = `/audio/${learningLang}/${voice}/${fileName}`;
+
+  try {
+    stopAudio();
+
+    const a = new Audio(url);
+    audioRef.current = a;
+    setIsPlaying(true);
+
+    a.onended = async () => {
+      setIsPlaying(false);
+
+      // petit "ding"
+      try {
+        const ding = new Audio("/audio/ui/ding.mp3");
+        await ding.play();
+      } catch (e) {
+        console.warn("ding failed");
+      }
+
+      // lancer enregistrement automatiquement
+      startRecording();
+    };
+    
+    a.onpause = () => setIsPlaying(false);
+
+    await a.play();
+  } catch (err) {
+    console.error("Audio play failed:", err);
+    setIsPlaying(false);
+    setMode1Message("Audio introuvable");
+  }
+}
+//fin
+
   function confirmL2Result() {
     if (!l2Result || !currentWordId) return;
 
     if (l2Result.ok) {
       promoteWordNow(currentWordId, 3);
     } else {
-      demoteToLevel1(currentWordId);
+        setMode1RetryQueue((prev) =>
+        prev.includes(currentWordId) ? prev : [...prev, currentWordId]
+      );
     }
 
     setL2Result(null);
@@ -615,7 +686,8 @@ useEffect(() => {
       };
     });
   }
-
+  
+/* on retire le "demote to level 1"
   function demoteToLevel1(wordId: string) {
     updateState((s) => {
       const lng: LearningLang = (s as any).activeLearningLang ?? "fa";
@@ -633,7 +705,7 @@ useEffect(() => {
         },
       };
     });
-  }
+  }*/
 
   function refreshCurrentWord() {
     stopAudio();
@@ -650,14 +722,35 @@ useEffect(() => {
       const level = mode as Level;
       const current = selForLng[mode] ?? null;
 
+      //on voit des mots de tous les niveaux, mais jamais 2 fois d'affilée
       const ids = activeWords
-        .map((w) => w.id)
-        .filter((id) => ((words[id]?.level ?? 1) as Level) === level);
+        .map((x) => x.id)
+        .filter((id) => id !== currentWordId);
 
-      const nextId = pickRandomId(ids, current);
-      if (!nextId) return s;
+        // si on rate un mot, il est placé dans une queue et revient bientôt 
+        let nextId: string | null = null;
 
-      selForLng[mode] = nextId;
+        if (
+          mode === 1 &&
+          mode1RetryQueue.length > 0 &&
+          Math.random() < 0.4
+        ) {
+          const retryId = mode1RetryQueue[0];
+
+          if (ids.includes(retryId)) {
+            nextId = retryId;
+            setMode1RetryQueue((prev) => prev.slice(1));
+          } else {
+            nextId = pickRandomId(ids, current);
+          }
+        } else {
+          nextId = pickRandomId(ids, current);
+        }
+
+        if (!nextId) return s;
+
+        selForLng[mode] = nextId;
+        //fin
 
       return {
         ...(s as any),
@@ -692,6 +785,17 @@ useEffect(() => {
   useEffect(() => {
     currentWordIdRef.current = currentWordId;
   }, [currentWordId]);
+
+  
+  // Générer 2 voix aléatoires à chaque nouveau mot
+  useEffect(() => {
+  if (!currentWord || (state as any).mode !== 1) return;
+
+  setMode1Choices(currentWord.mode1Voices ?? ["maman"]);
+  setSelectedMode1Voice(null);
+  setShowMode1Validation(false);
+  setMode1Message(null);
+}, [currentWord, (state as any).mode]);
 
   // Level 1 actions
   function handleListenL1() {
@@ -772,8 +876,13 @@ useEffect(() => {
           });
 
           const modeNow: Mode = (active.state as any).mode;
-
-              if (modeNow === 1) {
+            // Level 1 actions
+          if (modeNow === 1) {
+            setLastRecordingUrl(dataUrl);
+            setShowMode1Validation(true);
+          }
+          /*   remplacé provisoirement par les 3 lignes au-dessus
+          if (modeNow === 1) {
               setCelebrating({ word: w });
 
               setPhase(1);
@@ -818,6 +927,7 @@ useEffect(() => {
                 });
               });
             }
+            */
 
             if (modeNow === 3) {
               setLastRecordedUrl(dataUrl);
@@ -851,6 +961,55 @@ useEffect(() => {
 
       mediaRecorderRef.current = mr;
       mr.start();
+
+      //Stop recording after 1.5s of silence
+      let silenceTimer: any = null;
+        const audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+
+        source.connect(analyser);
+        analyser.fftSize = 512;
+
+        const data = new Uint8Array(analyser.frequencyBinCount);
+
+        const recordingStartedAt = Date.now();
+
+        function detectSilence() {
+          analyser.getByteFrequencyData(data);
+
+          const volume = data.reduce((a, b) => a + b, 0) / data.length;
+          const elapsed = Date.now() - recordingStartedAt;
+
+          // on ignore le silence pendant les 2 premières secondes
+          if (elapsed < 2000) {
+            if (mediaRecorderRef.current?.state === "recording") {
+              requestAnimationFrame(detectSilence);
+            }
+            return;
+          }
+
+          if (volume < 10) {
+            if (!silenceTimer) {
+              silenceTimer = setTimeout(() => {
+                stopRecording();
+              }, 1500);
+            }
+          } else {
+            if (silenceTimer) {
+              clearTimeout(silenceTimer);
+              silenceTimer = null;
+            }
+          }
+
+          if (mediaRecorderRef.current?.state === "recording") {
+            requestAnimationFrame(detectSilence);
+          }
+        }
+
+        detectSilence();
+
+
       setIsRecording(true);
     } catch (err) {
       console.error(err);
@@ -902,10 +1061,17 @@ useEffect(() => {
     );
   }, [activeWords, wordsForLang]);
 
-  function listenL2() {
+  // Playing audio file in Mode 2
+function listenL2() {
   if (!currentWord) return;
-  const url = currentWord.learning[learningLang]?.audioUrl;
-  if (!url) return;
+
+  const baseUrl = currentWord.learning[learningLang]?.audioUrl;
+  if (!baseUrl) return;
+
+  const fileName = baseUrl.split("/").pop();
+  if (!fileName) return;
+
+  const url = `/audio/${learningLang}/maman/${fileName}`;
   playControlledAudio(url);
 }
 
@@ -1159,13 +1325,15 @@ useEffect(() => {
     });
   }
 
+
+
   const displayedRecording = currentWordId ? recordingsForLang[currentWordId] : null;
 
   // c'est ici dans le composant juste avant le return
+
   const hasHint =
   !!(currentWord &&
      (currentWord.learning[learningLang] as any)?.hintAudioUrl);
-
 
   if (!mounted || !authChecked) return null;
 
@@ -1201,7 +1369,7 @@ useEffect(() => {
         </div>
       )}*/}
 
-      {/* Celebration overlay */}
+      {/* Celebration overlay 
       {celebrating && (
         <div style={styles.overlay}>
           <div ref={hi5Ref} style={styles.hi5Card}>
@@ -1237,6 +1405,7 @@ useEffect(() => {
           </div>
         </div>
       )}
+        */}
 
       {l2Result && (
         <div style={styles.overlay}>
@@ -1259,6 +1428,62 @@ useEffect(() => {
             >
               OK
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pop in mode 1 après enregistremet pour accepter */}
+      {showMode1Validation && (
+        <div style={styles.overlay}>
+          <div style={styles.hi5Card}>
+            <div style={{ fontSize: 56, lineHeight: 1 }}>🎙️</div>
+
+            <div style={{ marginTop: 12, fontSize: 18, fontWeight: 700 }}>
+              Est-ce que c’est bon ?
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              {lastRecordingUrl && (
+                <audio controls autoPlay src={lastRecordingUrl} style={{ width: "100%" }} />
+              )}
+            </div>
+
+            <div style={{ ...styles.actions, justifyContent: "center", marginTop: 16 }}>
+              <button
+                style={styles.primaryBtn}
+                
+                onClick={async () => {
+                  if (!currentWordId || !currentWord) return;
+
+                  setShowMode1Validation(false);
+
+                  setCelebrating({ word: currentWord });
+                  setPhase(1);
+
+                  await sleep(900);
+
+                  setPhase(0);
+                  setCelebrating(null);
+
+                  promoteWordNow(currentWordId, 2);
+                  refreshCurrentWord();
+                }}
+              >
+                OK
+              </button>
+
+              <button
+                style={styles.secondaryBtn}
+                onClick={() => {
+                  if (!currentWordId) return;
+                  setMode1RetryQueue((prev) => [...prev, currentWordId]);
+                  setShowMode1Validation(false);
+                  refreshCurrentWord();
+                }}
+              >
+                J'y arrive pas
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1493,22 +1718,23 @@ useEffect(() => {
                         🔀
                       </button>
 
+
+                    {mode1Choices?.map((voice) => (
                       <button
+                        key={voice}
                         type="button"
-                        style={{
-                          ...styles.playerBtn,
-                          ...(isPlaying ? styles.playerBtnPlaying : {}),
-                        }}
+                        style={styles.secondaryBtn}
+                        disabled={isMode1FlowRunning}
+                      //joue le bon audio dans la voix sélectionnée
                         onClick={() => {
-                          const url = currentWord.learning[learningLang]?.audioUrl;
-                          if (!url) return;
-                          togglePlay(url);
-                          handleListenL1();
-                        }}
-                        aria-label={t("l1.listenRepeat")}
+                        setSelectedMode1Voice(voice);
+                        playMode1Audio(voice);
+                      }}
                       >
-                        <span style={styles.playerIcon}>{isPlaying ? "⏸" : "▶︎"}</span>
+                        {getMode1VoiceLabel(voice)}
                       </button>
+                    ))}
+
 
                       <button
                         style={styles.iconBtnPrimary}
@@ -1522,6 +1748,23 @@ useEffect(() => {
                       </button>
                     </div>
                   </section>
+                )}
+
+                
+                {selectedMode1Voice && (
+                  <div style={styles.hint}>
+                    Voix choisie : {getMode1VoiceLabel(selectedMode1Voice)}
+                  </div>
+                )}
+
+                {/* Info visuelle enregistrement commence dans Mode 1 */}
+                {isRecording && (
+                  <div style={{ marginTop: 10, textAlign: "center" }}>
+                    <div style={{ fontSize: 18, fontWeight: 700 }}>À ton tour !</div>
+                    <div style={{ marginTop: 6, fontSize: 14, color: "#b00020" }}>
+                      ● Enregistrement…
+                    </div>
+                  </div>
                 )}
 
                 {/* Mode 2 */}
