@@ -24,6 +24,7 @@ import {
 import { tt, TKey } from "@/lib/i18n";
 import type { ProfileLang } from "@/lib/profiles";
 import { supabase } from "@/lib/supabase";
+import LogoutButton from "@/components/LogoutButton";
 
 /* ---------------- Helpers ---------------- */
 
@@ -1633,16 +1634,21 @@ function listenL2() {
 
 
           </div>
-          <button
-                  type="button"
-                  style={styles.profileSettingsBtn}
-                  onClick={() => {
-                    setProfileMenuOpen(false);
-                    window.location.href = "/settings";
-                  }}
-                >
-                  EXIT
-                </button>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              type="button"
+              style={styles.profileSettingsBtn}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                window.location.href = "/settings";
+              }}
+            >
+              Paramètres
+            </button>
+
+            <LogoutButton />
+          </div>
           {}
         </header>
 

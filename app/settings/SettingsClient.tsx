@@ -18,6 +18,7 @@ import {
 import type { LearningLang } from "../../lib/words";
 import { supabase } from "@/lib/supabase";
 import type { ProfileLang } from "@/lib/profiles";
+import LogoutButton from "@/components/LogoutButton";
 
 const AVATARS = ["👧", "👦", "🧒", "👩", "👨", "👵", "👴", "🐼", "🐱", "🐶", "🦊", "🐯"];
 
@@ -328,20 +329,23 @@ export default function SettingsClient() {
 return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <div style={styles.topRow}>
-          <button style={styles.backBtn} onClick={goBack}>
-            ← Retour au jeu
-          </button>
+      <div style={styles.topRow}>
+        <button style={styles.backBtn} onClick={goBack}>
+          ← Retour au jeu
+        </button>
 
-          <div style={styles.titleBlock}>
-            <div style={styles.h1}>Paramètres</div>
-            <div style={styles.sub}>Gérer les profils, avatars, langue, reset, suppression.</div>
-          </div>
+        <div style={styles.titleBlock}>
+          <div style={styles.h1}>Paramètres</div>
+          <div style={styles.sub}>Gérer les profils, avatars, langue, reset, suppression.</div>
+        </div>
 
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button style={styles.addBtn} onClick={onAddProfile}>
             ➕ Ajouter un profil
           </button>
+          <LogoutButton />
         </div>
+      </div>
 
         {!hasProfiles ? (
           <div style={styles.empty}>
