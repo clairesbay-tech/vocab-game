@@ -1729,7 +1729,7 @@ function listenL2() {
                       <button
                         key={voice}
                         type="button"
-                        style={styles.secondaryBtn}
+                        style={styles.playBtn}
                         disabled={isMode1FlowRunning}
                       //joue le bon audio dans la voix sélectionnée
                         onClick={() => {

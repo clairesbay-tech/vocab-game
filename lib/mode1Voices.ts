@@ -47,7 +47,7 @@ export function getMode1VoiceLabel(voice: Mode1Voice): string {
     case "hero":
       return "🦸 Super-héros";
     case "maman":
-      return "👩 Maman";
+      return "▶︎";
     case "pirate":
       return "🏴‍☠️ Pirate";
   }
