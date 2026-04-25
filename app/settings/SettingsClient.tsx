@@ -72,7 +72,7 @@ export default function SettingsClient() {
         .order("name", { ascending: true });
 
       if (error) {
-        console.error("load settings profiles error", error);
+        console.error("load settings profiles error", JSON.stringify(error));
         setMounted(true);
         return;
       }
@@ -126,7 +126,7 @@ export default function SettingsClient() {
       .eq("id", profileId);
 
     if (error) {
-      console.error("update learning lang error", error);
+      console.error("update learning lang error", JSON.stringify(error));
       alert(`Erreur mise à jour langue : ${error.message}`);
       return;
     }
@@ -151,7 +151,6 @@ export default function SettingsClient() {
     if (!updatedProfile) return;
 
     setRoot(next);
-    saveRootState(next);
 
     router.push(`/?profile=${encodeURIComponent(updatedProfile.name)}`);
   }
@@ -173,7 +172,7 @@ export default function SettingsClient() {
         .eq("id", profileId);
 
       if (error) {
-        console.error("update profile meta error", error);
+        console.error("update profile meta error", JSON.stringify(error));
         alert(`Erreur mise à jour profil : ${error.message}`);
         return;
       }
@@ -205,7 +204,7 @@ export default function SettingsClient() {
       .eq("id", profileId);
 
     if (error) {
-      console.error("reset profile error", error);
+      console.error("reset profile error", JSON.stringify(error));
       alert(`Erreur reset : ${error.message}`);
       return;
     }
@@ -249,7 +248,7 @@ export default function SettingsClient() {
     ]);
 
     if (error) {
-      console.error("create profile error", error);
+      console.error("create profile error", JSON.stringify(error));
       alert(`Erreur création profil : ${error.message}`);
       return;
     }
@@ -281,7 +280,7 @@ export default function SettingsClient() {
       .eq("id", profileId);
 
     if (error) {
-      console.error("rename profile error", error);
+      console.error("rename profile error", JSON.stringify(error));
       alert(`Erreur renommage : ${error.message}`);
       return;
     }
@@ -300,7 +299,7 @@ export default function SettingsClient() {
       .eq("id", profileId);
 
     if (error) {
-      console.error("delete profile error", error);
+      console.error("delete profile error", JSON.stringify(error));
       alert(`Erreur suppression : ${error.message}`);
       return;
     }

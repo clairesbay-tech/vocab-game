@@ -94,7 +94,7 @@ function pickRandomId(ids: string[], avoid?: string | null): string | null {
 
 export default function Page() {
 
-  //Test 15 mars
+  /*Test 15 mars
   useEffect(() => {
     async function testSupabase() {
       const { data, error } = await supabase.from("profiles").select("*");
@@ -103,7 +103,7 @@ export default function Page() {
 
     testSupabase();
   }, []);
-  // Fin test
+  */
 
   // Créer une queue de retry
   const [mode1RetryQueue, setMode1RetryQueue] = useState<string[]>([]);
@@ -159,7 +159,68 @@ export default function Page() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  //15 mars
+  useEffect(() => {
+  async function initApp() {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error("auth getUser error", userError);
+      setCurrentUserEmail(null);
+      setCurrentUserId(null);
+      setRoot({ activeProfileId: "", profiles: [] });
+      setAuthChecked(true);
+      setMounted(true);
+      return;
+    }
+
+    setCurrentUserEmail(user?.email ?? null);
+    setCurrentUserId(user?.id ?? null);
+
+    if (!user?.id) {
+      setRoot({ activeProfileId: "", profiles: [] });
+      setAuthChecked(true);
+      setMounted(true);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, name, avatar, ui_lang, root_state")
+      .eq("user_id", user.id)
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("load profiles error", error);
+      setRoot({ activeProfileId: "", profiles: [] });
+      setAuthChecked(true);
+      setMounted(true);
+      return;
+    }
+
+    const profilesFromDb =
+      data?.map((p) => ({
+        id: p.id,
+        name: p.name,
+        avatar: p.avatar ?? "👧",
+        lang: (p.ui_lang ?? "fr") as ProfileLang,
+        state: (p.root_state as any) ?? buildInitialProfileState(),
+      })) ?? [];
+
+    setRoot({
+      activeProfileId: profilesFromDb[0]?.id ?? "",
+      profiles: profilesFromDb,
+    });
+
+    setAuthChecked(true);
+    setMounted(true);
+  }
+
+  initApp();
+}, []);
+  /*15 mars
   useEffect(() => {
     async function loadUser() {
       const {
@@ -178,7 +239,7 @@ export default function Page() {
 
     loadUser();
   }, []);
-
+*/
 
 
   function togglePlay(url: string) {
@@ -287,7 +348,7 @@ function toggleLearningMenu() {
   });
 }
 
-  // load once 21 mars
+  /* load once 21 mars
 useEffect(() => {
   async function loadApp() {
     const {
@@ -350,12 +411,12 @@ useEffect(() => {
   }
 
   loadApp();
-}, []);
+}, []);*/
 
 
 
   // persist
-  //21 mars
+  
   useEffect(() => {
     async function saveActiveProfileState() {
       if (!mounted) return;
@@ -366,10 +427,15 @@ useEffect(() => {
       );
       if (!activeProfile) return;
 
+      const cleanState = {
+        ...activeProfile.state,
+        recordingsByLang: {},
+      };
+
       const { error } = await supabase
         .from("profiles")
         .update({
-          root_state: activeProfile.state,
+          root_state: cleanState,
         })
         .eq("id", activeProfile.id);
 
@@ -1328,13 +1394,10 @@ function listenL2() {
   if (!mounted || !authChecked) return null;
 
   return (
+  
   <div style={styles.page}>
     <div style={{ marginBottom: 12, fontSize: 14 }}>
-      {!authChecked
-        ? "Vérification session..."
-        : currentUserEmail
-        ? `Connecté : ${currentUserEmail}`
-        : "Non connecté"}
+      {activeProfile ? `Joueur : ${activeProfile.name}` : ""}
     </div>
       
       {/* Fly animation 
