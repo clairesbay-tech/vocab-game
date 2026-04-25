@@ -2,22 +2,13 @@
 
 import { supabase } from "@/lib/supabase";
 
-type LogoutButtonProps = {
-  label?: string;
+type Props = {
+  iconOnly?: boolean;
 };
 
-export default function LogoutButton({
-  label = "Se déconnecter",
-}: LogoutButtonProps) {
+export default function LogoutButton({ iconOnly = false }: Props) {
   async function handleLogout() {
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      console.error("logout error", error);
-      alert(`Erreur déconnexion : ${error.message}`);
-      return;
-    }
-
+    await supabase.auth.signOut();
     window.location.href = "/login";
   }
 
@@ -26,15 +17,33 @@ export default function LogoutButton({
       type="button"
       onClick={handleLogout}
       style={{
-        padding: "10px 12px",
+        width: 44,
+        height: 44,
         borderRadius: 12,
-        border: "1px solid rgba(0,0,0,0.12)",
+        border: "1px solid rgba(0,0,0,0.08)",
         background: "#fff",
         cursor: "pointer",
-        fontWeight: 800,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
+      title="Se déconnecter"
     >
-      {label}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#607d8b"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+        <path d="M9 12h12l-3 -3" />
+        <path d="M18 15l3 -3" />
+      </svg>
     </button>
   );
 }

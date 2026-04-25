@@ -46,6 +46,79 @@ export const WORDS: WordDef[] = [
       fr: { text: "sujet", trans: "SU-JET", audioUrl: A("fr", "sujet") },
     },
   },
+
+  // COULEURS
+{
+  id: "jaune",
+  families: ["couleurs"],
+  imageEmoji: "🟡",
+  learning: {
+    fa: { text: "زرد", trans: "zard", audioUrl: A("fa", "jaune") },
+    fr: { text: "jaune", audioUrl: A("fr", "jaune") },
+    en: { text: "yellow", audioUrl: A("en", "jaune") },
+  },
+},
+{
+  id: "bleu",
+  families: ["couleurs"],
+  imageEmoji: "🔵",
+  learning: {
+    fa: { text: "آبی", trans: "âbi", audioUrl: A("fa", "bleu") },
+    fr: { text: "bleu", audioUrl: A("fr", "bleu") },
+    en: { text: "blue", audioUrl: A("en", "bleu") },
+  },
+},
+{
+  id: "rouge",
+  families: ["couleurs"],
+  imageEmoji: "🔴",
+  learning: {
+    fa: { text: "قرمز", trans: "ghermez", audioUrl: A("fa", "rouge") },
+    fr: { text: "rouge", audioUrl: A("fr", "rouge") },
+    en: { text: "red", audioUrl: A("en", "rouge") },
+  },
+},
+{
+  id: "violet",
+  families: ["couleurs"],
+  imageEmoji: "🟣",
+  learning: {
+    fa: { text: "بنفش", trans: "banafshe", audioUrl: A("fa", "violet") },
+    fr: { text: "violet", audioUrl: A("fr", "violet") },
+    en: { text: "purple", audioUrl: A("en", "violet") },
+  },
+},
+{
+  id: "orange",
+  families: ["couleurs"],
+  imageEmoji: "🟠",
+  learning: {
+    fa: { text: "نارنجی", trans: "nârenji", audioUrl: A("fa", "orange") },
+    fr: { text: "orange", audioUrl: A("fr", "orange") },
+    en: { text: "orange", audioUrl: A("en", "orange") },
+  },
+},
+{
+  id: "noir",
+  families: ["couleurs"],
+  imageEmoji: "⚫",
+  learning: {
+    fa: { text: "سیاه", trans: "siyâh", audioUrl: A("fa", "noir") },
+    fr: { text: "noir", audioUrl: A("fr", "noir") },
+    en: { text: "black", audioUrl: A("en", "noir") },
+  },
+},
+{
+  id: "vert",
+  families: ["couleurs"],
+  imageEmoji: "🟢",
+  learning: {
+    fa: { text: "سبز", trans: "sabz", audioUrl: A("fa", "vert") },
+    fr: { text: "vert", audioUrl: A("fr", "vert") },
+    en: { text: "green", audioUrl: A("en", "vert") },
+  },
+},
+
   // FRUITS
   {
     id: "apple",
@@ -118,7 +191,7 @@ export const WORDS: WordDef[] = [
     families: ["fruits"],
     imageEmoji: "🍉",
     learning: {
-      fa: { text: "هندوانه", trans: "HEN-DE-VÂ-NEH", audioUrl: A("fa", "watermelon") },
+      fa: { text: "هندوانه", trans: "HEN-DE-VÂ-NEH", audioUrl: A("fa", "hendevouneh") },
       fr: { text: "pastèque", trans: "PAS-TÈK", audioUrl: A("fr", "watermelon") },
       en: { text: "watermelon", trans: "WA-TER-ME-LON", audioUrl: A("en", "watermelon") },
       es: { text: "sandía", trans: "SAN-DI-A", audioUrl: A("es", "watermelon") },

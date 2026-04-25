@@ -489,22 +489,13 @@ async function playMode1Audio(voice: Mode1Voice) {
     audioRef.current = a;
     setIsPlaying(true);
 
-    a.onended = async () => {
+    a.onended = () => {
       setIsPlaying(false);
-
-      // petit "ding"
-      try {
-        const ding = new Audio("/audio/ui/ding.mp3");
-        await ding.play();
-      } catch (e) {
-        console.warn("ding failed");
-      }
-
-      // lancer enregistrement automatiquement
-      startRecording();
     };
-    
-    a.onpause = () => setIsPlaying(false);
+
+    a.onpause = () => {
+      setIsPlaying(false);
+    };
 
     await a.play();
   } catch (err) {
@@ -1105,12 +1096,12 @@ function listenL2() {
         const [l3HintOpen, setL3HintOpen] = useState(false);
         const [lastHintAudioUrl, setLastHintAudioUrl] = useState<string | null>(null);
 
+
+        //Fonction pour jouer l'indice au niveau 3
         function playHintL3() {
           if (!currentWord) return;
 
-          const hintUrl =
-            (currentWord.learning[learningLang] as any)?.hintAudioUrl;
-
+          const hintUrl = (currentWord.learning[learningLang] as any)?.hintAudioUrl;
           if (!hintUrl) return;
 
           stopAudio();
@@ -1122,7 +1113,10 @@ function listenL2() {
 
           a.onended = () => {
             setIsPlaying(false);
-            setL3HintOpen(true);
+            // On ne fait rien d'autre :
+            // - pas de pop-in
+            // - pas de refresh
+            // - le mot reste au niveau 3
           };
 
           a.onpause = () => {
@@ -1132,9 +1126,9 @@ function listenL2() {
           a.play().catch((e) => {
             console.error("Audio play failed:", e);
             setIsPlaying(false);
-            setL3HintOpen(true);
           });
         }
+        //Fin
 
         function revealL3() {
           if (!currentWord || !currentWordId) return;
@@ -1170,11 +1164,6 @@ function listenL2() {
           refreshCurrentWord();
         }
 
-        function confirmL3HintAndNext() {
-          stopAudio();
-          setL3HintOpen(false);
-          refreshCurrentWord();
-        }
         function confirmL3RecordingRetry() {
           stopAudio();
           setL3RecordingReviewOpen(false);
@@ -1433,7 +1422,7 @@ function listenL2() {
         </div>
       )}
 
-      {/* Pop in mode 1 après enregistremet pour accepter */}
+      {/* Pop in mode 1 après enregistremet pour accepter 
       {showMode1Validation && (
         <div style={styles.overlay}>
           <div style={styles.hi5Card}>
@@ -1487,7 +1476,7 @@ function listenL2() {
             </div>
           </div>
         </div>
-      )}
+      )}*/}
 
       {l3RecordingReviewOpen && (
         <div style={styles.overlay}>
@@ -1535,35 +1524,7 @@ function listenL2() {
           </div>
         </div>
       )}
-
-      {l3HintOpen && (
-        <div style={styles.overlay}>
-          <div style={styles.hi5Card}>
-            <div style={{ fontSize: 56, lineHeight: 1 }}>💡</div>
-
-            <div style={{ marginTop: 12, fontSize: 16, fontWeight: 700 }}>
-              Indice écouté
-            </div>
-
-            <div style={{ marginTop: 8, fontSize: 14, opacity: 0.8 }}>
-              Ce mot reste au niveau 3. On passe à un autre mot.
-            </div>
-
-            {lastHintAudioUrl && (
-              <div style={{ marginTop: 12 }}>
-                <audio controls src={lastHintAudioUrl} style={{ width: "100%" }} />
-              </div>
-            )}
-
-            <button
-              style={{ ...styles.primaryBtn, marginTop: 16 }}
-              onClick={confirmL3HintAndNext}
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
+      
 
       <div style={styles.card}>
         {/* Mode bar */}
@@ -1763,7 +1724,7 @@ function listenL2() {
                   </div>
                 )}
 
-                {/* Info visuelle enregistrement commence dans Mode 1 */}
+                {/* Info visuelle enregistrement commence dans Mode 1 
                 {isRecording && (
                   <div style={{ marginTop: 10, textAlign: "center" }}>
                     <div style={{ fontSize: 18, fontWeight: 700 }}>À ton tour !</div>
@@ -1771,7 +1732,7 @@ function listenL2() {
                       ● Enregistrement…
                     </div>
                   </div>
-                )}
+                )}*/}
 
                 {/* Mode 2 */}
                 {(state as any).mode === 2 && (
@@ -1875,7 +1836,16 @@ function listenL2() {
               onClick={playHintL3}
               disabled={!hasHint}
             >
-              Indice
+              <span
+                style={{
+                  width: 60,
+                  height: 60,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 36,
+                }}
+              >🔍</span>
             </button>
 
             <button
