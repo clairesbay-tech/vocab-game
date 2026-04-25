@@ -152,7 +152,8 @@ export default function SettingsClient() {
 
     setRoot(next);
     saveRootState(next);
-    window.location.href = `/?profile=${encodeURIComponent(updatedProfile.name)}`;
+
+    router.push(`/?profile=${encodeURIComponent(updatedProfile.name)}`);
   }
 
   //Mise à jour du profil sur Supabase

@@ -1605,7 +1605,7 @@ function listenL2() {
                 window.location.href = "/settings";
               }}
             >
-              Paramètres
+              ⚙️
             </button>
 
             <LogoutButton />
