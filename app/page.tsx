@@ -257,7 +257,16 @@ export default function Page() {
 
     setIsPlaying(true);
 
-    a.onended = () => setIsPlaying(false);
+    //Quand on écoute un mot au niveau 1, il est dispo au niveau 2 et ça rafraîchit pour le mot suivant
+    a.onended = () => {
+      setIsPlaying(false);
+
+      if (currentWordId) {
+        promoteWordNow(currentWordId, 2);
+        refreshCurrentWord();
+      }
+    };
+
     a.onpause = () => setIsPlaying(false);
 
     a.play().catch((e) => {
@@ -521,7 +530,11 @@ useEffect(() => {
   audioRef.current = a;
   setIsPlaying(true);
 
-  a.onended = () => setIsPlaying(false);
+      //Quand on écoute un mot au niveau 2
+    a.onended = () => {
+      setIsPlaying(false);
+    };
+
   a.onpause = () => setIsPlaying(false);
 
   a.play().catch((e) => {
@@ -555,8 +568,14 @@ async function playMode1Audio(voice: Mode1Voice) {
     audioRef.current = a;
     setIsPlaying(true);
 
+    //Quand on écoute un mot au niveau 1, il est dispo au niveau 2 et ça rafraîchit pour le mot suivant
     a.onended = () => {
       setIsPlaying(false);
+
+      if (currentWordId) {
+        promoteWordNow(currentWordId, 2);
+        refreshCurrentWord();
+      }
     };
 
     a.onpause = () => {
@@ -1350,6 +1369,7 @@ function listenL2() {
     );
   }
 
+  /* Retiré quand j'ai retiré le "high five"
   function markAcquiredL1() {
     stopAudio();
     if (!currentWordId) return;
@@ -1379,7 +1399,7 @@ function listenL2() {
         mode: 1,
       };
     });
-  }
+  }*/
 
 
 
@@ -1765,17 +1785,6 @@ function listenL2() {
                       </button>
                     ))}
 
-
-                      <button
-                        style={styles.iconBtnPrimary}
-                        onClick={() => {
-                          stopAudio();
-                          markAcquiredL1();
-                        }}
-                        disabled={!currentWordId}
-                      >
-                        🙌🏻
-                      </button>
                     </div>
                   </section>
                 )}
@@ -2552,21 +2561,6 @@ playBtn: {
   color: "#fff",
   boxShadow: "0 18px 44px rgba(0,0,0,0.18)",
   fontSize: 30,
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-},
-
-iconBtnPrimary: {
-  width: 58,
-  height: 58,
-  borderRadius: 999,
-  border: "none",
-  background: "#2E9E55",
-  color: "#fff",
-  boxShadow: "0 14px 34px rgba(46,158,85,0.22)",
-  fontSize: 26,
   cursor: "pointer",
   display: "flex",
   alignItems: "center",

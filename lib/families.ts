@@ -56,11 +56,18 @@ export const FAMILIES: FamilyDef[] = [
     color: "#f75a5a",
   },
   {
-  id: "nombres",
-  fr: "Nombres",
+  id: "chiffres",
+  fr: "Chiffres",
   eng: "Numbers",
-  emoji: "💯",
+  emoji: "1️⃣",
   color: "#7C3AED",
+},
+  {
+  id: "dizaines",
+  fr: "Dizaines",
+  eng: "Tens",
+  emoji: "🔟",
+  color: "#3aed67",
 }
 ];
 
